@@ -16,8 +16,12 @@ class Particle:
         self.has_interaction = interaction_cooldown
 
         self.speed = # calculation based on impact
-        self.energy =
+        other_particle.update = self.speed
         pass
+
+    def update(self, speed: list[float]): # updating attributes if other particle bumps into me
+        self.speed = speed
+        self.has_interaction = interaction_cooldown
 
     def forward(self):
         # one timestep
@@ -29,7 +33,7 @@ class Particle:
 
 #       elif self.position very close to other position (HNSW + pythagoras):
 #            self.interact(other_particle)
-#               other_particle.interact(self)
+#
 
 
 

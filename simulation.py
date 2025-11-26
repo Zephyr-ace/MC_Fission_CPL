@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import time
 import random
 
-collision_distance = 100
+collision_distance = 1
 
 # Parameters
 sigma_0 = 580  # Fission cross-section for thermal neutrons in barns
@@ -19,7 +19,7 @@ def fission_probability(v1,v2):
     probability = (sigma_0 / sigma_thermal) * (5.22e-2 * v**2 / E_0)**(-alpha)
     if probability > 1:
         print("Error in code, probablity > 1 !!!")
-    return probability
+    return probability, v
 
 def simulate (simulation_steps, neutrons_start: int = 10, uranium_start: int = 10):
 
@@ -27,8 +27,8 @@ def simulate (simulation_steps, neutrons_start: int = 10, uranium_start: int = 1
 
     # instance particle objects of type neutron
     for i in range(neutrons_start):
-        speed_vector = np.random.randint(0, 5000, 3)
-        position_vector = np.random.randint(0, 100, 3)
+        speed_vector = np.random.randint(2000, 3000, 3)
+        position_vector = np.random.randint(0, 30, 3)
         mass_neutron = 1.675 * 10**-27
 
         particles.append(Particle("neutron", speed_vector, position_vector, mass_neutron))
@@ -42,20 +42,32 @@ def simulate (simulation_steps, neutrons_start: int = 10, uranium_start: int = 1
         particles.append(Particle("uranium_235", speed_vector, position_vector, mass_uranium_235))
 
 
-    for i in range(10):
+    for i in range(simulation_steps):
         for particle in particles:
             particle.forward()
             for possible_neighbor in particles: # check for collisions with ALL other particles (very inefficient and bad scaling ik=)
-                if particle.cooldown < 1 and possible_neighbor.cooldown < 1: # both havent just interacted, to avoid endless interactions
+                #if particle.id == particles[0].id:
+                #    print(particle.type, possible_neighbor.type, particle.cooldown, possible_neighbor.cooldown)
+
+                if particle.cooldown == 0 and possible_neighbor.cooldown == 0: # both havent just interacted, to avoid endless interactions
+
                     distance = particle.distance(possible_neighbor)
-                    print(distance)
+
+
                     if distance <= collision_distance and distance != -1.0 : # if two particles are very close but NOT the same particle -> interaction
 
                         # checking for fission possibility
                         if (particle.type == "uranium_235" and possible_neighbor.type == "neutron") or (particle.type == "neutron" and possible_neighbor.type == "uranium_235"):
-                            if random.random() < fission_probability(particle.speed, possible_neighbor.speed):
-                                print("fission")
+                            fission_prob, v = fission_probability(particle.speed, possible_neighbor.speed)
+
+                            print("fission_probability:     ", fission_prob, v)
+
+                            if random.random() < fission_prob:
+                                print("fission!!! wow!")
                         else:
+                            print(particle.type,possible_neighbor.type)
+                            v = np.linalg.norm(particle.speed - possible_neighbor.speed)
+                            print("interaction but not fission, speed:   ", v)
                             particle.collision_interact(possible_neighbor)
 
 
@@ -64,4 +76,4 @@ def simulate (simulation_steps, neutrons_start: int = 10, uranium_start: int = 1
 
 
 
-simulate(100, 1000, 100)
+simulate(100, 1000, 1000)

@@ -22,8 +22,12 @@ class Particle:
         return distance
 
     def collision_interact(self, other_particle):
-        self.cooldown = interaction_cooldown_parameter
+        if self.id == other_particle.id: # to avoid interaction with itself
+            return self
 
+        self.cooldown = interaction_cooldown_parameter # to avoid endless interactions
+
+        # attributes of particles
         m1 = self.mass
         m2 = other_particle.mass
         v1 = self.speed
@@ -36,6 +40,8 @@ class Particle:
         # Update speeds and cooldown
         self.speed = v1_new
         other_particle.update(v2_new)
+
+        return self
 
 
     def update(self, speed): # updating attributes if other particle bumps into me

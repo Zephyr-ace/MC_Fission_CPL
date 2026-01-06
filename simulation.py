@@ -59,10 +59,10 @@ class Simulation:
 
 
     def _fission_probability(self, v1, v2):
+        if v1.all() == v2.all():
+            return 0,0
         v_dif = np.linalg.norm(v1 - v2)  # speed difference
         probability = (sigma_0 / sigma_thermal) * (5.22e-2 * v_dif ** 2 / E_0) ** (-alpha)
-        if probability > 1:
-            print("Error in code, probablity > 1 !!!")
         return probability, v_dif
 
 
@@ -87,10 +87,9 @@ class Simulation:
         if (particle.type == "uranium_235" and possible_neighbour.type == "neutron") or (
                 particle.type == "neutron" and possible_neighbour.type == "uranium_235"):
             fission_prob, v_dif = self._fission_probability(particle.speed, possible_neighbour.speed)
-            print("fission_probability and speed difference:     ", fission_prob, v_dif)
+            fission_prob = 0.5
 
             if random.random() < fission_prob:
-                print("fission!!! wow!")
                 speed_new_neutron = np.cross(particle.speed, possible_neighbour.speed) # cross product for new speed vector, won't interfere with either of other particle and speed dimension is right
                 position_new_neutron = particle.position + speed_new_neutron * simulation_speed # to not interact directly again.
                 new_neutron = Particle(type ="neutron",position = position_new_neutron, speed = speed_new_neutron, mass = self.mass_neutron, radius= self.radius_neutron)
@@ -98,9 +97,7 @@ class Simulation:
 
             else:
                 # normal interaction
-                print(particle.type, possible_neighbour.type)
                 v = np.linalg.norm(particle.speed - possible_neighbour.speed)
-                print("interaction but not fission, speed:   ", v)
                 particle.collision_interact(possible_neighbour)
                 return None
         else:
@@ -111,6 +108,12 @@ class Simulation:
     def one_simulation_step(self, particles):
         new_particles = []
         for particle in particles:
+            if np.any(np.abs(particle.position) > 100):
+                particle.speed = particle.speed * -1
+
+
+
+
             particle.forward() # move in space
 
             for possible_neighbour in particles: # check for collisions with ALL other particles (very inefficient and bad scaling ik=)
@@ -121,6 +124,9 @@ class Simulation:
 
         if new_particles:
             particles.extend(new_particles)
+
+        return len(new_particles)
+
 
     def simulate(self):
         particles = self._innitialize_particles()

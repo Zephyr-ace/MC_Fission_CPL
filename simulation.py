@@ -93,7 +93,7 @@ class Simulation:
                 print("fission!!! wow!")
                 speed_new_neutron = np.cross(particle.speed, possible_neighbour.speed) # cross product for new speed vector, won't interfere with either of other particle and speed dimension is right
                 position_new_neutron = particle.position + speed_new_neutron * simulation_speed # to not interact directly again.
-                new_neutron = Particle(type ="neutron", speed = speed_new_neutron, mass = self.mass_neutron, radius= self.radius_neutron)
+                new_neutron = Particle(type ="neutron",position = position_new_neutron, speed = speed_new_neutron, mass = self.mass_neutron, radius= self.radius_neutron)
                 return new_neutron
 
             else:
@@ -109,12 +109,18 @@ class Simulation:
             return None
 
     def one_simulation_step(self, particles):
+        new_particles = []
         for particle in particles:
             particle.forward() # move in space
 
             for possible_neighbour in particles: # check for collisions with ALL other particles (very inefficient and bad scaling ik=)
                 if self._check_for_collision(particle, possible_neighbour):
-                    self._execute_collision_or_interaction(particle, possible_neighbour)
+                    spawned = self._execute_collision_or_interaction(particle, possible_neighbour)
+                    if spawned is not None:
+                        new_particles.append(spawned)
+
+        if new_particles:
+            particles.extend(new_particles)
 
     def simulate(self):
         particles = self._innitialize_particles()
@@ -123,5 +129,6 @@ class Simulation:
 
 
 
-simulation = Simulation(3)
-simulation.simulate()
+if __name__ == "__main__":
+    simulation = Simulation(3)
+    simulation.simulate()

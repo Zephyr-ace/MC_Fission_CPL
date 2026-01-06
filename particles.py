@@ -5,11 +5,12 @@ simulation_speed = 0.001 # smaller -> more precise (+ latency)
 interaction_cooldown_parameter = 0.005 # parameter for how long a particle has to wait until it can interact again. debuggung purposes only
 
 class Particle:
-    def __init__(self, type: str, speed, position, mass: float): # Mass: kg
+    def __init__(self, type: str, speed, position, mass: float, radius: float): # Mass: kg
         self.id = str(uuid.uuid4())
 
         self.type = type  # 'neutron', 'uranium_235' etc.
         self.mass = mass
+        self.radius = radius
         self.position = np.array(position, dtype=np.float64) # int -> float
         self.speed = np.array(speed, dtype=np.float64)
 
@@ -22,7 +23,7 @@ class Particle:
         return distance
 
     def collision_interact(self, other_particle):
-        if self.id == other_particle.id: # to avoid interaction with itself
+        if self.id == other_particle.id: # to avoid interaction with itself (redundant with code in simulation)
             return self
 
         self.cooldown = interaction_cooldown_parameter # to avoid endless interactions

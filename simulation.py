@@ -22,6 +22,7 @@ def fission_probability(v1,v2):
 
 def simulate (simulation_steps, neutrons_start: int = 10, uranium_start: int = 10):
 
+#creating initial particles <<<
     particles = []
 
     # instance particle objects of type neutron
@@ -43,6 +44,11 @@ def simulate (simulation_steps, neutrons_start: int = 10, uranium_start: int = 1
 
         particles.append(Particle("uranium_235", speed_vector, position_vector, mass_uranium_235, radius_uranium))
     print(f"created {uranium_start} Uranium particles")
+
+
+
+# >>>
+
 
     stats = []
     for i in range(simulation_steps):

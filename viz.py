@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from simulation import Simulation
 
 pos = np.random.randn(5, 3)  # start with 5 particles
 

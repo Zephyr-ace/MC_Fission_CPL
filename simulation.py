@@ -108,16 +108,18 @@ class Simulation:
             particle.collision_interact(possible_neighbour)
             return None
 
+    def one_simulation_step(self, particles):
+        for particle in particles:
+            particle.forward() # move in space
+
+            for possible_neighbour in particles: # check for collisions with ALL other particles (very inefficient and bad scaling ik=)
+                if self._check_for_collision(particle, possible_neighbour):
+                    self._execute_collision_or_interaction(particle, possible_neighbour)
 
     def simulate(self):
         particles = self._innitialize_particles()
         for i in range(self.simulation_steps):
-            for particle in particles:
-                particle.forward() # move in space
-
-                for possible_neighbour in particles: # check for collisions with ALL other particles (very inefficient and bad scaling ik=)
-                    if self._check_for_collision(particle, possible_neighbour):
-                        self._execute_collision_or_interaction(particle, possible_neighbour)
+            self.one_simulation_step(particles)
 
 
 

@@ -34,22 +34,26 @@ class Simulation:
         """creating initial particles"""
 
         particles = []
+        def random_unit_vector():
+            vec = np.random.normal(0.0, 1.0, 3)
+            norm = np.linalg.norm(vec)
+            if norm == 0:
+                return np.array([1.0, 0.0, 0.0])
+            return vec / norm
 
         # instance particle objects of type neutron
         for i in range(self.neutrons_start):
-            speed_vector = np.random.randint(2000, 2200, 3)
-            position_vector = np.random.randint(0, 30, 3)
-
-
+            speed_mag = np.random.uniform(2000, 2200)
+            speed_vector = random_unit_vector() * speed_mag
+            position_vector = np.random.uniform(0, 100, 3)
             particles.append(Particle("neutron", speed_vector, position_vector, self.mass_neutron, self.radius_neutron))
         print(f"created {self.neutrons_start} neutron particles")
 
         # instance particle objects of type uranium
         for i in range(self.uranium_start):
-            speed_vector = np.random.randint(0, 1, 3)
-            position_vector = np.random.randint(0, 100, 3)
-
-
+            speed_mag = np.random.uniform(0, 10)
+            speed_vector = random_unit_vector() * speed_mag
+            position_vector = np.random.uniform(0, 100, 3)
             particles.append(Particle("uranium_235", speed_vector, position_vector, self.mass_uranium_235, self.radius_uranium))
         print(f"created {self.uranium_start} Uranium particles")
 
@@ -87,7 +91,7 @@ class Simulation:
         if (particle.type == "uranium_235" and possible_neighbour.type == "neutron") or (
                 particle.type == "neutron" and possible_neighbour.type == "uranium_235"):
             fission_prob, v_dif = self._fission_probability(particle.speed, possible_neighbour.speed)
-            fission_prob = 0.5
+            fission_prob = 0.1
 
             if random.random() < fission_prob:
                 speed_new_neutron = np.cross(particle.speed, possible_neighbour.speed) # cross product for new speed vector, won't interfere with either of other particle and speed dimension is right

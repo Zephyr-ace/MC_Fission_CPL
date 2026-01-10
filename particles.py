@@ -1,8 +1,8 @@
 import numpy as np
 import uuid
 
-simulation_speed = 0.001 # smaller -> more precise (+ latency)
-interaction_cooldown_parameter = 0.005 # parameter for how long a particle has to wait until it can interact again. debuggung purposes only
+simulation_speed = 0.0001 # smaller -> more precise (+ latency)
+interaction_cooldown_parameter = simulation_speed / 3 # parameter for how long a particle has to wait until it can interact again. debuggung purposes only
 
 class Particle:
     def __init__(self, type: str, speed, position, mass: float, radius: float): # Mass: kg

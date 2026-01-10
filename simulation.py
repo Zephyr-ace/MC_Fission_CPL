@@ -72,13 +72,15 @@ class Simulation:
 
 
     def _check_for_collision(self, particle, possible_neighbour):
-        if particle.cooldown == 0 and possible_neighbour.cooldown == 0:  # both havent just interacted, to avoid endless interactions
+        if particle.cooldown == 0 or particle.cooldown != possible_neighbour.cooldown:  # particle not just interacted, to avoid endless interactions or add and possible_neighbour.cooldown == 0
+            if particle.id == possible_neighbour.id:
+                return False
 
-            distance = particle.distance(possible_neighbour)
-
+            displacement = particle.position - possible_neighbour.position
+            distance_sq = np.dot(displacement, displacement)
             collision_distance = particle.radius + possible_neighbour.radius
 
-            if distance <= collision_distance and distance != -1.0:  # if two particles are very close but NOT the same particle -> interaction
+            if distance_sq <= collision_distance ** 2:  # if two particles are very close -> interaction
                 return True
 
             else: return False
@@ -91,10 +93,13 @@ class Simulation:
         if (particle.type == "uranium_235" and possible_neighbour.type == "neutron") or (
                 particle.type == "neutron" and possible_neighbour.type == "uranium_235"):
             fission_prob, v_dif = self._fission_probability(particle.speed, possible_neighbour.speed)
-            fission_prob = 0.1
+            fission_prob = 0.1 # for the simulation to work with less particles.
 
             if random.random() < fission_prob:
-                speed_new_neutron = np.cross(particle.speed, possible_neighbour.speed) # cross product for new speed vector, won't interfere with either of other particle and speed dimension is right
+                speed_new_neutron_direction = np.cross(particle.speed, possible_neighbour.speed) # won't interfere with either of other particles
+                speed_new_neutron_norm = speed_new_neutron_direction / np.linalg.norm(speed_new_neutron_direction)
+                speed_new_neutron = speed_new_neutron_norm * 10**5
+
                 position_new_neutron = particle.position + speed_new_neutron * simulation_speed # to not interact directly again.
                 new_neutron = Particle(type ="neutron",position = position_new_neutron, speed = speed_new_neutron, mass = self.mass_neutron, radius= self.radius_neutron)
                 return new_neutron
@@ -112,15 +117,16 @@ class Simulation:
     def one_simulation_step(self, particles):
         new_particles = []
         for particle in particles:
-            if np.any(np.abs(particle.position) > 100):
+            if np.any(np.abs(particle.position) > 100): # bound em by 100x100x100 -> reflect
                 particle.speed = particle.speed * -1
-
-
-
-
             particle.forward() # move in space
 
-            for possible_neighbour in particles: # check for collisions with ALL other particles (very inefficient and bad scaling ik=)
+        # Check each pair once to avoid duplicate/self collision work.
+        particle_count = len(particles)
+        for i in range(particle_count): # separated from previous loop. bc scaling AND precision.
+            particle = particles[i]
+            for j in range(i + 1, particle_count):
+                possible_neighbour = particles[j]
                 if self._check_for_collision(particle, possible_neighbour):
                     spawned = self._execute_collision_or_interaction(particle, possible_neighbour)
                     if spawned is not None:
@@ -129,7 +135,7 @@ class Simulation:
         if new_particles:
             particles.extend(new_particles)
 
-        return len(new_particles)
+        return len(new_particles), particles
 
 
     def simulate(self):
@@ -140,5 +146,5 @@ class Simulation:
 
 
 if __name__ == "__main__":
-    simulation = Simulation(3)
+    simulation = Simulation(simulation_steps=10)
     simulation.simulate()

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from simulation import Simulation
 
-simulator = Simulation(simulation_steps=1000, neutrons_start=50, uranium_start=50)
+simulator = Simulation(simulation_steps=10000, neutrons_start=50, uranium_start=50)
 particles = simulator._innitialize_particles()
 
 def positions_from_particles(particles):
@@ -23,10 +23,10 @@ ax.set_xlim(0, 120)
 ax.set_ylim(0, 120)
 ax.set_zlim(0, 120)
 
-neutron_count = [0]
+neutron_count = [simulator.neutrons_start]
 def update(frame):
-    print(len(neutron_count))
-    n_new_neutrons = simulator.one_simulation_step(particles)
+
+    n_new_neutrons, particles_list = simulator.one_simulation_step(particles)
     neutron_count.append(n_new_neutrons + neutron_count[-1])
 
     pos = positions_from_particles(particles)

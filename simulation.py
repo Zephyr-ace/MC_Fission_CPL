@@ -93,7 +93,7 @@ class Simulation:
         if (particle.type == "uranium_235" and possible_neighbour.type == "neutron") or (
                 particle.type == "neutron" and possible_neighbour.type == "uranium_235"):
             fission_prob, v_dif = self._fission_probability(particle.speed, possible_neighbour.speed)
-            fission_prob = 0.1 # for the simulation to work with less particles.
+            fission_prob = 0.1 # for the simulation to work with fewer particles.
 
             if random.random() < fission_prob:
                 speed_new_neutron_direction = np.cross(particle.speed, possible_neighbour.speed) # won't interfere with either of other particles
@@ -121,7 +121,7 @@ class Simulation:
                 particle.speed = particle.speed * -1
             particle.forward() # move in space
 
-        # Check each pair once to avoid duplicate/self collision work.
+        # Check each pair once to avoid duplicate/self collision work.-> more efficient and clean
         particle_count = len(particles)
         for i in range(particle_count): # separated from previous loop. bc scaling AND precision.
             particle = particles[i]

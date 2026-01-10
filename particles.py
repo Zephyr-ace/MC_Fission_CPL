@@ -14,7 +14,7 @@ class Particle:
         self.position = np.array(position, dtype=np.float64) # int -> float
         self.speed = np.array(speed, dtype=np.float64)
 
-        self.cooldown = 0
+        self.cooldown = interaction_cooldown_parameter
 
     def distance(self, other_particle):
         if self.id == other_particle.id:  # Check based on unique random ID

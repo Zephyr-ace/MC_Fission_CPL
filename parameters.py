@@ -12,6 +12,9 @@ interaction_cooldown_parameter = simulation_speed / 3 # parameter for how long a
 
 radius_multiplicator = 10**10   # same effect as "pressing" everything tighter together
 
+# arbitrarily chosen parameters
+speed_magnitude_new_products = 1.5 * 10**6
+
 
 
 

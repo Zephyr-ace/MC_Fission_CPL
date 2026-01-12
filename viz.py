@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from simulation import Simulation
-from parameters import threshold_factor_uranium
+from parameters import threshold_factor_uranium, bounding_parameter
 
-simulator = Simulation(simulation_steps=10**8, neutrons_start=10, uranium_start=100)
+simulator = Simulation(simulation_steps=10**8, neutrons_start=1, uranium_start=200)
 particles = simulator._innitialize_particles()
 
 TYPE_COLORS = {
@@ -41,9 +41,9 @@ progress_text = progress_ax.text(0.5, 0.5, "0%", ha="center", va="center",
                                  color="white", fontsize=9)
 
 sc = ax.scatter(pos[:, 0], pos[:, 1], pos[:, 2], c=colors)
-ax.set_xlim(-120, 120)
-ax.set_ylim(-120, 120)
-ax.set_zlim(-120, 120)
+ax.set_xlim(-bounding_parameter * 1.1, bounding_parameter * 1.1)
+ax.set_ylim(-bounding_parameter * 1.1, bounding_parameter * 1.1)
+ax.set_zlim(-bounding_parameter * 1.1, bounding_parameter * 1.1)
 
 neutron_count = [simulator.neutrons_start]
 uranium_count = [simulator.uranium_start]

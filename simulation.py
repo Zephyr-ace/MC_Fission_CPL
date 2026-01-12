@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import time
 import random
 from parameters import sigma_0, sigma_thermal, E_0, alpha, bounding_parameter, neutron_speed_magnitude, \
-    radius_multiplicator, neutron_init_speed, fission_prob_hardcoded_parameter
+    radius_multiplicator, neutron_init_speed, fission_prob_hardcoded_parameter, speed_magnitude_new_products
 
 class Simulation:
 
@@ -41,7 +41,7 @@ class Simulation:
         for i in range(self.uranium_start):
             speed_mag = np.random.uniform(0, 100)
             speed_vector = self.random_unit_vector() * speed_mag
-            position_vector = np.random.uniform(-100, 100, 3)
+            position_vector = np.random.uniform(-bounding_parameter*0.9, bounding_parameter*0.9, 3)
             particles.append(Particle("uranium_235", speed_vector, position_vector, self.mass_uranium_235, self.radius_uranium))
 
 
@@ -65,12 +65,11 @@ class Simulation:
 
 
     def _check_for_collision(self, particle, possible_neighbour):
-
         if particle.cooldown == -1 or possible_neighbour.cooldown == -1: # no interaction if one is marked as deleted
             return False
 
-        elif particle.cooldown == 0 or particle.cooldown != possible_neighbour.cooldown:  # particle not just interacted, to avoid endless interactions or add and possible_neighbour.cooldown == 0
-            if particle.id == possible_neighbour.id:
+        elif particle.cooldown == 0 or particle.cooldown != possible_neighbour.cooldown:  # particles have not just interacted, to avoid endless interactions or add and possible_neighbour.cooldown == 0
+            if particle.id == possible_neighbour.id: # redundant but secure
                 return False
 
             displacement = particle.position - possible_neighbour.position
@@ -95,27 +94,32 @@ class Simulation:
 
             if random.random() < fission_prob:
 
-                # create 2-3 new neutrons
+                # create 2-3 new neutrons <<<
                 a = 2
                 if random.random() < 0.5:
                     a = 3
 
                 new_neutrons = []
+                speed_new_neutron_direction = np.cross(particle.speed, possible_neighbour.speed)  # won't interfere with either of other particles
+                speed_new_neutron_norm = speed_new_neutron_direction / np.linalg.norm(speed_new_neutron_direction)
+
                 for i in range(a):
-                    speed_new_neutron_direction = np.cross(particle.speed, possible_neighbour.speed) # won't interfere with either of other particles
-                    speed_new_neutron_norm = speed_new_neutron_direction / np.linalg.norm(speed_new_neutron_direction)
-                    speed_new_neutron = neutron_speed_magnitude * (speed_new_neutron_norm + self.random_unit_vector() * 0.3 ) # to add some noise
+                    speed_new_neutron = neutron_speed_magnitude * (speed_new_neutron_norm + self.random_unit_vector() * 0.4 )/ 1.4 # to add some noise
 
                     position_new_neutron = particle.position + speed_new_neutron * simulation_speed # to not interact directly again.
                     new_neutron = Particle(type ="neutron",position = position_new_neutron, speed = speed_new_neutron, mass = self.mass_neutron, radius= self.radius_neutron)
                     new_neutrons.append(new_neutron)
-
+                                        # >>>
 
                 old_uranium = (particle if particle.type == "uranium_235" else possible_neighbour)
                 old_uranium.cooldown = -1
 
-                new_barium = Particle(type ="barium",position = old_uranium.position, speed = old_uranium.speed, mass = self.mass_barium, radius= self.radius_barium)
-                new_krypton = Particle(type ="krypton",position = old_uranium.position - speed_new_neutron * simulation_speed, speed = old_uranium.speed * -1, mass = self.mass_krypton, radius= self.radius_krypton)
+
+                speed_new_barium = -  speed_magnitude_new_products * (speed_new_neutron_norm + self.random_unit_vector() * 0.4 )/1.4 # opposite direction than neutrons + randomness
+                speed_new_krypton = - speed_magnitude_new_products * (speed_new_neutron_norm + self.random_unit_vector() * 0.4 )/1.4
+
+                new_barium = Particle(type ="barium",position = old_uranium.position + simulation_speed * speed_new_barium, speed = speed_new_barium, mass = self.mass_barium, radius= self.radius_barium)
+                new_krypton = Particle(type ="krypton",position = old_uranium.position + simulation_speed * speed_new_krypton, speed = speed_new_krypton, mass = self.mass_krypton, radius= self.radius_krypton)
 
                 spawned = [new_neutrons , [new_barium], [new_krypton]]
                 deleted = old_uranium

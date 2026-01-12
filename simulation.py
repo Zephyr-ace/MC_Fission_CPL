@@ -4,18 +4,8 @@ import numpy as np
 import plotly.graph_objects as go
 import time
 import random
-
-
-# Parameters
-sigma_0 = 580  # Fission cross-section for thermal neutrons in barns
-sigma_thermal = 580  # Maximum fission cross-section for thermal neutrons in barns
-E_0 = 0.025  # Reference energy in eV (typical for thermal neutrons)
-alpha = 0.8  # Empirical constant (typically between 0.5 and 1)
-
-# Function to calculate the fission probability
-
-
-
+from parameters import sigma_0, sigma_thermal, E_0, alpha, bounding_parameter, neutron_speed_magnitude, \
+    radius_multiplicator, neutron_init_speed, fission_prob_hardcoded_parameter
 
 class Simulation:
 
@@ -28,38 +18,41 @@ class Simulation:
         self.mass_neutron = 1.675 * 10 ** -27
         self.radius_neutron = 8 * 10 ** -16
         self.mass_uranium_235 = 3.91 * 10 ** -25
-        self.radius_uranium = 1.5 * 10
+        self.radius_uranium = 1.4 * 10**-10
+        self.mass_barium = 2.28 * 10 ** -25
+        self.radius_barium = 0.8 * 10**-10
+        self.mass_krypton = 1.39 * 10 ** -25
+        self.radius_krypton = 0.88 * 10**-10
 
     def _innitialize_particles(self):
         """creating initial particles"""
 
         particles = []
-        def random_unit_vector():
-            vec = np.random.normal(0.0, 1.0, 3)
-            norm = np.linalg.norm(vec)
-            if norm == 0:
-                return np.array([1.0, 0.0, 0.0])
-            return vec / norm
 
         # instance particle objects of type neutron
         for i in range(self.neutrons_start):
-            speed_mag = np.random.uniform(2000, 2200)
-            speed_vector = random_unit_vector() * speed_mag
-            position_vector = np.random.uniform(0, 100, 3)
+            speed_mag = np.random.uniform(neutron_init_speed, 1.5* neutron_init_speed)
+            speed_vector = self.random_unit_vector() * speed_mag
+            position_vector = np.random.uniform(low = -bounding_parameter*0.9, high= bounding_parameter*0.9, size=3)
             particles.append(Particle("neutron", speed_vector, position_vector, self.mass_neutron, self.radius_neutron))
-        print(f"created {self.neutrons_start} neutron particles")
+
 
         # instance particle objects of type uranium
         for i in range(self.uranium_start):
-            speed_mag = np.random.uniform(0, 10)
-            speed_vector = random_unit_vector() * speed_mag
-            position_vector = np.random.uniform(0, 100, 3)
+            speed_mag = np.random.uniform(0, 100)
+            speed_vector = self.random_unit_vector() * speed_mag
+            position_vector = np.random.uniform(-100, 100, 3)
             particles.append(Particle("uranium_235", speed_vector, position_vector, self.mass_uranium_235, self.radius_uranium))
-        print(f"created {self.uranium_start} Uranium particles")
+
 
         return particles
 
-
+    def random_unit_vector(self):
+        vec = np.random.normal(0.0, 1.0, 3)
+        norm = np.linalg.norm(vec)
+        if norm == 0:
+            return np.array([1.0, 0.0, 0.0])
+        return vec / norm
 
 
     def _fission_probability(self, v1, v2):
@@ -72,13 +65,17 @@ class Simulation:
 
 
     def _check_for_collision(self, particle, possible_neighbour):
-        if particle.cooldown == 0 or particle.cooldown != possible_neighbour.cooldown:  # particle not just interacted, to avoid endless interactions or add and possible_neighbour.cooldown == 0
+
+        if particle.cooldown == -1 or possible_neighbour.cooldown == -1: # no interaction if one is marked as deleted
+            return False
+
+        elif particle.cooldown == 0 or particle.cooldown != possible_neighbour.cooldown:  # particle not just interacted, to avoid endless interactions or add and possible_neighbour.cooldown == 0
             if particle.id == possible_neighbour.id:
                 return False
 
             displacement = particle.position - possible_neighbour.position
             distance_sq = np.dot(displacement, displacement)
-            collision_distance = particle.radius + possible_neighbour.radius
+            collision_distance = (particle.radius + possible_neighbour.radius) * radius_multiplicator
 
             if distance_sq <= collision_distance ** 2:  # if two particles are very close -> interaction
                 return True
@@ -93,49 +90,90 @@ class Simulation:
         if (particle.type == "uranium_235" and possible_neighbour.type == "neutron") or (
                 particle.type == "neutron" and possible_neighbour.type == "uranium_235"):
             fission_prob, v_dif = self._fission_probability(particle.speed, possible_neighbour.speed)
-            fission_prob = 0.1 # for the simulation to work with fewer particles.
+            if fission_prob_hardcoded_parameter is not None:
+                fission_prob = fission_prob_hardcoded_parameter # for the simulation to work with fewer particles.
 
             if random.random() < fission_prob:
-                speed_new_neutron_direction = np.cross(particle.speed, possible_neighbour.speed) # won't interfere with either of other particles
-                speed_new_neutron_norm = speed_new_neutron_direction / np.linalg.norm(speed_new_neutron_direction)
-                speed_new_neutron = speed_new_neutron_norm * 10**5
 
-                position_new_neutron = particle.position + speed_new_neutron * simulation_speed # to not interact directly again.
-                new_neutron = Particle(type ="neutron",position = position_new_neutron, speed = speed_new_neutron, mass = self.mass_neutron, radius= self.radius_neutron)
-                return new_neutron
+                # create 2-3 new neutrons
+                a = 2
+                if random.random() < 0.5:
+                    a = 3
+
+                new_neutrons = []
+                for i in range(a):
+                    speed_new_neutron_direction = np.cross(particle.speed, possible_neighbour.speed) # won't interfere with either of other particles
+                    speed_new_neutron_norm = speed_new_neutron_direction / np.linalg.norm(speed_new_neutron_direction)
+                    speed_new_neutron = neutron_speed_magnitude * (speed_new_neutron_norm + self.random_unit_vector() * 0.3 ) # to add some noise
+
+                    position_new_neutron = particle.position + speed_new_neutron * simulation_speed # to not interact directly again.
+                    new_neutron = Particle(type ="neutron",position = position_new_neutron, speed = speed_new_neutron, mass = self.mass_neutron, radius= self.radius_neutron)
+                    new_neutrons.append(new_neutron)
+
+
+                old_uranium = (particle if particle.type == "uranium_235" else possible_neighbour)
+                old_uranium.cooldown = -1
+
+                new_barium = Particle(type ="barium",position = old_uranium.position, speed = old_uranium.speed, mass = self.mass_barium, radius= self.radius_barium)
+                new_krypton = Particle(type ="krypton",position = old_uranium.position - speed_new_neutron * simulation_speed, speed = old_uranium.speed * -1, mass = self.mass_krypton, radius= self.radius_krypton)
+
+                spawned = [new_neutrons , [new_barium], [new_krypton]]
+                deleted = old_uranium
+                return spawned, deleted
 
             else:
                 # normal interaction
-                v = np.linalg.norm(particle.speed - possible_neighbour.speed)
                 particle.collision_interact(possible_neighbour)
-                return None
+                return None, None
         else:
             # normal interaction
             particle.collision_interact(possible_neighbour)
-            return None
+            return None, None
 
     def one_simulation_step(self, particles):
         new_particles = []
+        old_particles = []
+
         for particle in particles:
-            if np.any(np.abs(particle.position) > 100): # bound em by 100x100x100 -> reflect
-                particle.speed = particle.speed * -1
+            for i in range(3):
+                if np.abs(particle.position[i]) >bounding_parameter: # bound em by 100x100x100 -> reflect
+                    particle.speed[i] *= -1
             particle.forward() # move in space
 
-        # Check each pair once to avoid duplicate/self collision work.-> more efficient and clean
+        # Check each pair once to avoid duplicate/self collision work.-> more efficient and clean <<<
         particle_count = len(particles)
         for i in range(particle_count): # separated from previous loop. bc scaling AND precision.
-            particle = particles[i]
-            for j in range(i + 1, particle_count):
-                possible_neighbour = particles[j]
-                if self._check_for_collision(particle, possible_neighbour):
-                    spawned = self._execute_collision_or_interaction(particle, possible_neighbour)
-                    if spawned is not None:
-                        new_particles.append(spawned)
 
+            particle = particles[i]
+            if particle.cooldown == -1: # skip marked (split/removed) particles
+                continue
+
+            for j in range(i + 1, particle_count):
+
+                possible_neighbour = particles[j]
+
+                if possible_neighbour.cooldown == -1:  # same principle as above: skip marked (split/removed) particles
+                    continue
+
+                if self._check_for_collision(particle, possible_neighbour):
+                    spawned, deleted = self._execute_collision_or_interaction(particle, possible_neighbour)
+                    if spawned is not None:
+                        print (spawned)
+                        for particle_category in spawned:
+                            new_particles.extend(particle_category)
+
+                    if deleted is not None: # delete the uranium which got split
+                        old_particles.append(deleted)
+
+        # >>>
+        # kind of what the method returns
         if new_particles:
             particles.extend(new_particles)
+        if old_particles:
+            for old_particle in old_particles:
+                particles.remove(old_particle)
 
-        return len(new_particles), particles
+        return len(new_particles), len(old_particles)
 
 
     def simulate(self):

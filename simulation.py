@@ -5,11 +5,11 @@ import plotly.graph_objects as go
 import time
 import random
 from parameters import sigma_0, sigma_thermal, E_0, alpha, bounding_parameter, neutron_speed_magnitude, \
-    radius_multiplicator, neutron_init_speed, fission_prob_hardcoded_parameter, speed_magnitude_new_products
+    radius_multiplicator, neutron_init_speed, fission_prob_hardcoded_parameter, speed_magnitude_new_products, uranium_start, neutrons_start
 
 class Simulation:
 
-    def __init__(self, simulation_steps, neutrons_start: int = 10, uranium_start: int = 10):
+    def __init__(self, simulation_steps, neutrons_start, uranium_start):
         self.simulation_steps = simulation_steps
         self.neutrons_start = neutrons_start
         self.uranium_start = uranium_start
@@ -101,7 +101,11 @@ class Simulation:
 
                 new_neutrons = []
                 speed_new_neutron_direction = np.cross(particle.speed, possible_neighbour.speed)  # won't interfere with either of other particles
-                speed_new_neutron_norm = speed_new_neutron_direction / np.linalg.norm(speed_new_neutron_direction)
+                speed_new_neutron_direction_norm = np.linalg.norm(speed_new_neutron_direction)
+                if speed_new_neutron_direction_norm == 0:
+                    speed_new_neutron_norm = self.random_unit_vector()
+                else:
+                    speed_new_neutron_norm = speed_new_neutron_direction / speed_new_neutron_direction_norm
 
                 for i in range(a):
                     speed_new_neutron = neutron_speed_magnitude * (speed_new_neutron_norm + self.random_unit_vector() * 0.4 )/ 1.4 # to add some noise
@@ -115,8 +119,9 @@ class Simulation:
                 old_uranium.cooldown = -1
 
 
-                speed_new_barium = -  speed_magnitude_new_products * (speed_new_neutron_norm + self.random_unit_vector() * 0.4 )/1.4 # opposite direction than neutrons + randomness
-                speed_new_krypton = - speed_magnitude_new_products * (speed_new_neutron_norm + self.random_unit_vector() * 0.4 )/1.4
+                product_dir = speed_new_neutron_norm + self.random_unit_vector() * 0.4
+                speed_new_barium = -speed_magnitude_new_products * product_dir / 1.4 # opposite directions + randomness
+                speed_new_krypton = speed_magnitude_new_products * product_dir / 1.4
 
                 new_barium = Particle(type ="barium",position = old_uranium.position + simulation_speed * speed_new_barium, speed = speed_new_barium, mass = self.mass_barium, radius= self.radius_barium)
                 new_krypton = Particle(type ="krypton",position = old_uranium.position + simulation_speed * speed_new_krypton, speed = speed_new_krypton, mass = self.mass_krypton, radius= self.radius_krypton)
@@ -134,15 +139,19 @@ class Simulation:
             particle.collision_interact(possible_neighbour)
             return None, None
 
-    def one_simulation_step(self, particles):
+    def one_simulation_step(self, particles, metadata):
         new_particles = []
         old_particles = []
 
         for particle in particles:
-            for i in range(3):
-                if np.abs(particle.position[i]) >bounding_parameter: # bound em by 100x100x100 -> reflect
-                    particle.speed[i] *= -1
             particle.forward() # move in space
+            for i in range(3):
+                if particle.position[i] > bounding_parameter: # reflect and clamp
+                    particle.position[i] = bounding_parameter
+                    particle.speed[i] *= -1
+                elif particle.position[i] < -bounding_parameter:
+                    particle.position[i] = -bounding_parameter
+                    particle.speed[i] *= -1
 
         # Check each pair once to avoid duplicate/self collision work.-> more efficient and clean <<<
         particle_count = len(particles)
@@ -161,10 +170,10 @@ class Simulation:
 
                 if self._check_for_collision(particle, possible_neighbour):
                     spawned, deleted = self._execute_collision_or_interaction(particle, possible_neighbour)
+
                     if spawned is not None:
-                        print (spawned)
-                        for particle_category in spawned:
-                            new_particles.extend(particle_category)
+                        for spawned_group in spawned:
+                            new_particles.extend(spawned_group)
 
                     if deleted is not None: # delete the uranium which got split
                         old_particles.append(deleted)
@@ -173,20 +182,46 @@ class Simulation:
         # kind of what the method returns
         if new_particles:
             particles.extend(new_particles)
+
         if old_particles:
             for old_particle in old_particles:
                 particles.remove(old_particle)
 
-        return len(new_particles), len(old_particles)
+        # metadata counts (recompute by type to avoid mixing products)
+        counts = {"neutron": 0, "uranium_235": 0, "barium": 0, "krypton": 0}
+        for particle in particles:
+            if particle.cooldown == -1:
+                continue
+            counts[particle.type] += 1
+
+        metadata["neutron_counts"].append(counts["neutron"])
+        metadata["uranium_counts"].append(counts["uranium_235"])
+        metadata["barium_counts"].append(counts["barium"])
+        metadata["krypton_counts"].append(counts["krypton"])
+
+        return particles, metadata
 
 
-    def simulate(self):
+
+    def simulate(self, uranium_threshold = 0.0):
         particles = self._innitialize_particles()
+        metadata = {
+            "uranium_counts": [self.uranium_start],
+            "neutron_counts": [self.neutrons_start],
+            "barium_counts": [0],
+            "krypton_counts": [0],
+        }
+
         for i in range(self.simulation_steps):
-            self.one_simulation_step(particles)
+            self.one_simulation_step(particles, metadata)  # modifies particles and metadata directly
 
+            # check if uranium bellow treshold
+            if metadata["uranium_counts"][-1] <= uranium_threshold * metadata["uranium_counts"][0]:
+                return None
 
+        return particles, metadata
 
 if __name__ == "__main__":
-    simulation = Simulation(simulation_steps=10)
-    simulation.simulate()
+    simulation = Simulation(simulation_steps=1000, uranium_start=uranium_start, neutrons_start=neutrons_start)
+    p, m = simulation.simulate()
+    print(m)

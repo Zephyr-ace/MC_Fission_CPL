@@ -45,16 +45,19 @@ ax.set_xlim(-bounding_parameter * 1.1, bounding_parameter * 1.1)
 ax.set_ylim(-bounding_parameter * 1.1, bounding_parameter * 1.1)
 ax.set_zlim(-bounding_parameter * 1.1, bounding_parameter * 1.1)
 
-neutron_count = [simulator.neutrons_start]
-uranium_count = [simulator.uranium_start]
+metadata = {
+    "uranium_counts": [simulator.uranium_start],
+    "neutron_counts": [simulator.neutrons_start],
+    "barium_counts": [0],
+    "krypton_counts": [0],
+}
+neutron_count = metadata["neutron_counts"]
+uranium_count = metadata["uranium_counts"]
 
 uranium_threshold = simulator.uranium_start * threshold_factor_uranium
 
 def update(frame):
-
-    n_new_neutrons, n_old_uranium = simulator.one_simulation_step(particles) # modifies particles directly, outputs metadata
-    neutron_count.append(neutron_count[-1] + n_new_neutrons)
-    uranium_count.append(uranium_count[-1] - n_old_uranium)
+    simulator.one_simulation_step(particles, metadata) # modifies particles directly, outputs metadata
 
     pos = positions_from_particles(particles)
     colors = colors_from_particles(particles)
@@ -82,11 +85,13 @@ plt.show()
 
 # After the FuncAnimation is done, create a new figure for the count plot
 fig2, ax2 = plt.subplots()
-ax2.plot(range(len(neutron_count)), neutron_count, label='Neutron Count')
-ax2.plot(range(len(uranium_count)), uranium_count, label='Uranium Count')
+ax2.plot(range(len(neutron_count)), neutron_count, label="Neutron", color=TYPE_COLORS["neutron"], linewidth=2)
+ax2.plot(range(len(uranium_count)), uranium_count, label="Uranium-235", color=TYPE_COLORS["uranium_235"], linewidth=2)
+ax2.plot(range(len(metadata["barium_counts"])), metadata["barium_counts"], label="Barium", color=TYPE_COLORS["barium"], linestyle="--")
+ax2.plot(range(len(metadata["krypton_counts"])), metadata["krypton_counts"], label="Krypton", color=TYPE_COLORS["krypton"], linestyle="--")
 ax2.set_xlabel('Time Step')
 ax2.set_ylabel('Count')
 ax2.set_title('Particle Count Over Time')
-ax2.legend()
+ax2.legend(loc="upper left", bbox_to_anchor=(0, 0.95), frameon=False)
 
 plt.show()

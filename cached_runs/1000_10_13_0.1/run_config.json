@@ -1,0 +1,1 @@
+{"simulation_steps": 100000, "uranium_threshold_factor": 0.03, "uranium_start": 1000, "neutrons_start": 10, "bounding_parameter": 13, "fission_prob_hardcoded_parameter": 0.1}

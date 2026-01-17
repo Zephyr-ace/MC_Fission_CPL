@@ -1,7 +1,7 @@
-from logic.particles import Particle, simulation_speed
+from core.particles import Particle, simulation_speed
 import numpy as np
 import random
-from logic.parameters import sigma_0, sigma_thermal, E_0, alpha, bounding_parameter, neutron_speed_magnitude, \
+from core.parameters import sigma_0, sigma_thermal, E_0, alpha, bounding_parameter, neutron_speed_magnitude, \
     radius_multiplicator,simulation_steps, neutron_init_speed, fission_prob_hardcoded_parameter, speed_magnitude_new_products, uranium_start, neutrons_start
 
 class Simulation:

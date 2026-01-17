@@ -1,6 +1,6 @@
 import numpy as np
 import uuid
-from parameters import simulation_speed, interaction_cooldown_parameter
+from core.parameters import simulation_speed, interaction_cooldown_parameter
 
 
 class Particle:

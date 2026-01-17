@@ -77,5 +77,52 @@ def run_and_cache(simulation_steps, uranium_threshold_factor,
     print(f"Cached snapshots at {dir_name}")
 
 
+def run_multiple_monte_carlo(simulation_steps=simulation_steps,
+                             uranium_threshold_factor=threshold_factor_uranium,
+                             bounding_parameters=None,
+                             fission_probabilities=None):
+    if bounding_parameters is None:
+        bounding_parameters = [bounding_parameter]
+    if fission_probabilities is None:
+        fission_probabilities = [fission_prob_hardcoded_parameter]
+
+    base_dir = Path(__file__).resolve().parents[1] / "cached_runs"
+    multiple_bounding = len(bounding_parameters) > 1
+    multiple_fission = len(fission_probabilities) > 1
+
+    if multiple_bounding:
+        base_cache_dir = base_dir / "bounding_parameter"
+        for bound in bounding_parameters:
+            run_and_cache(
+                simulation_steps,
+                uranium_threshold_factor,
+                bounding_parameter=bound,
+                fission_prob_hardcoded_parameter=fission_probabilities[0],
+                base_cache_dir=base_cache_dir,
+            )
+
+    if multiple_fission:
+        base_cache_dir = base_dir / "fission_prob_hardcoded_parameter"
+        for fission_prob in fission_probabilities:
+            run_and_cache(
+                simulation_steps,
+                uranium_threshold_factor,
+                bounding_parameter=bounding_parameters[0],
+                fission_prob_hardcoded_parameter=fission_prob,
+                base_cache_dir=base_cache_dir,
+            )
+
+    if not multiple_bounding and not multiple_fission:
+        run_and_cache(
+            simulation_steps,
+            uranium_threshold_factor,
+            bounding_parameter=bounding_parameters[0],
+            fission_prob_hardcoded_parameter=fission_probabilities[0],
+            base_cache_dir=base_dir,
+        )
+
+
 if __name__ == "__main__":
-    run_and_cache(simulation_steps, threshold_factor_uranium)
+    run_multiple_monte_carlo(
+                             bounding_parameters=[4,6,8,10,12,15,20,30,45,60,100],
+                             fission_probabilities=[0.01,0.05,0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],)

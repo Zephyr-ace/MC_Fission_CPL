@@ -229,28 +229,6 @@ class Simulation:
 
         return all_snapshots_positions, metadata
 
-def run_multiple_monte_carlo(simulation_steps=simulation_steps,
-                             uranium_threshold_factor=threshold_factor_uranium,
-                             bounding_parameters=None,
-                             fission_probabilities=None):
-
-    if bounding_parameters is None:
-        bounding_parameters = [bounding_parameter]
-    if fission_probabilities is None:
-        fission_probabilities = [fission_prob_hardcoded_parameter]
-
-    from core.run_and_cache import run_and_cache
-
-    for bound in bounding_parameters:
-        for fission_prob in fission_probabilities:
-            run_and_cache(
-                simulation_steps,
-                uranium_threshold_factor,
-                bounding_parameter=bound,
-                fission_prob_hardcoded_parameter=fission_prob,
-            )
-
-
 if __name__ == "__main__":
     simulation = Simulation(simulation_steps=simulation_steps, uranium_start=uranium_start, neutrons_start=neutrons_start)
     s, m = simulation.simulate()

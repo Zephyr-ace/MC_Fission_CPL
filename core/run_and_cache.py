@@ -16,18 +16,23 @@ from core.simulation import Simulation
 
 TYPES = ("neutron", "uranium_235", "barium", "krypton")
 
-def _create_folder_name():
-    base_dir = Path(__file__).resolve().parents[1] / "cached_runs"
+def _create_folder_name(bounding_parameter_value, fission_prob_hardcoded_parameter_value, base_dir=None):
+    base_dir = Path(base_dir) if base_dir is not None else Path(__file__).resolve().parents[1] / "cached_runs"
     return base_dir / (
-        f"{uranium_start}_{neutrons_start}_{bounding_parameter}_{fission_prob_hardcoded_parameter}"
+        f"{uranium_start}_{neutrons_start}_{bounding_parameter_value}_{fission_prob_hardcoded_parameter_value}"
     )
 
-def run_and_cache(simulation_steps, uranium_threshold_factor):
-    simulator = Simulation(simulation_steps, neutrons_start, uranium_start)
+def run_and_cache(simulation_steps, uranium_threshold_factor,
+                  bounding_parameter=bounding_parameter,
+                  fission_prob_hardcoded_parameter=fission_prob_hardcoded_parameter,
+                  base_cache_dir=None):
+    simulator = Simulation(simulation_steps, neutrons_start, uranium_start,
+                           bounding_parameter=bounding_parameter,
+                           fission_prob_hardcoded_parameter=fission_prob_hardcoded_parameter)
 
     snapshots, metadata = simulator.simulate(uranium_threshold=uranium_threshold_factor)
 
-    dir_name = _create_folder_name()
+    dir_name = _create_folder_name(bounding_parameter, fission_prob_hardcoded_parameter, base_dir=base_cache_dir)
     dir_name.mkdir(parents=True, exist_ok=True) # create dir
 
     pos_blocks = {t: [] for t in TYPES} # dict containing lists of snapshots (in np array format)

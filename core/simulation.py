@@ -2,14 +2,18 @@ from core.particles import Particle, simulation_speed
 import numpy as np
 import random
 from core.parameters import sigma_0, sigma_thermal, E_0, alpha, bounding_parameter, neutron_speed_magnitude, \
-    radius_multiplicator,simulation_steps, neutron_init_speed, fission_prob_hardcoded_parameter, speed_magnitude_new_products, uranium_start, neutrons_start
+    radius_multiplicator,simulation_steps, neutron_init_speed, fission_prob_hardcoded_parameter, speed_magnitude_new_products, uranium_start, neutrons_start, threshold_factor_uranium
 
 class Simulation:
 
-    def __init__(self, simulation_steps, neutrons_start, uranium_start):
+    def __init__(self, simulation_steps, neutrons_start, uranium_start,
+                 bounding_parameter=bounding_parameter,
+                 fission_prob_hardcoded_parameter=fission_prob_hardcoded_parameter):
         self.simulation_steps = simulation_steps
         self.neutrons_start = neutrons_start
         self.uranium_start = uranium_start
+        self.bounding_parameter = bounding_parameter
+        self.fission_prob_hardcoded_parameter = fission_prob_hardcoded_parameter
 
         # constants
         self.mass_neutron = 1.675 * 10 ** -27
@@ -30,7 +34,7 @@ class Simulation:
         for i in range(self.neutrons_start):
             speed_mag = np.random.uniform(neutron_init_speed, 1.5* neutron_init_speed)
             speed_vector = self.random_unit_vector() * speed_mag
-            position_vector = np.random.uniform(low = -bounding_parameter*0.9, high= bounding_parameter*0.9, size=3)
+            position_vector = np.random.uniform(low = -self.bounding_parameter*0.9, high= self.bounding_parameter*0.9, size=3)
             particles.append(Particle("neutron", speed_vector, position_vector, self.mass_neutron, self.radius_neutron))
 
 
@@ -38,7 +42,7 @@ class Simulation:
         for i in range(self.uranium_start):
             speed_mag = np.random.uniform(0, 100)
             speed_vector = self.random_unit_vector() * speed_mag
-            position_vector = np.random.uniform(-bounding_parameter*0.9, bounding_parameter*0.9, 3)
+            position_vector = np.random.uniform(-self.bounding_parameter*0.9, self.bounding_parameter*0.9, 3)
             particles.append(Particle("uranium_235", speed_vector, position_vector, self.mass_uranium_235, self.radius_uranium))
 
 
@@ -86,8 +90,8 @@ class Simulation:
         if (particle.type == "uranium_235" and possible_neighbour.type == "neutron") or (
                 particle.type == "neutron" and possible_neighbour.type == "uranium_235"):
             fission_prob, v_dif = self._fission_probability(particle.speed, possible_neighbour.speed)
-            if fission_prob_hardcoded_parameter is not None:
-                fission_prob = fission_prob_hardcoded_parameter # for the simulation to work with fewer particles.
+            if self.fission_prob_hardcoded_parameter is not None:
+                fission_prob = self.fission_prob_hardcoded_parameter # for the simulation to work with fewer particles.
 
             if random.random() < fission_prob:
 
@@ -143,11 +147,11 @@ class Simulation:
         for particle in particles:
             particle.forward() # move in space
             for i in range(3):
-                if particle.position[i] > bounding_parameter: # reflect and clamp
-                    particle.position[i] = bounding_parameter
+                if particle.position[i] > self.bounding_parameter: # reflect and clamp
+                    particle.position[i] = self.bounding_parameter
                     particle.speed[i] *= -1
-                elif particle.position[i] < -bounding_parameter:
-                    particle.position[i] = -bounding_parameter
+                elif particle.position[i] < -self.bounding_parameter:
+                    particle.position[i] = -self.bounding_parameter
                     particle.speed[i] *= -1
 
         # Check each pair once to avoid duplicate/self collision work.-> more efficient and clean <<<
@@ -224,6 +228,28 @@ class Simulation:
                 return all_snapshots_positions, metadata
 
         return all_snapshots_positions, metadata
+
+def run_multiple_monte_carlo(simulation_steps=simulation_steps,
+                             uranium_threshold_factor=threshold_factor_uranium,
+                             bounding_parameters=None,
+                             fission_probabilities=None):
+
+    if bounding_parameters is None:
+        bounding_parameters = [bounding_parameter]
+    if fission_probabilities is None:
+        fission_probabilities = [fission_prob_hardcoded_parameter]
+
+    from core.run_and_cache import run_and_cache
+
+    for bound in bounding_parameters:
+        for fission_prob in fission_probabilities:
+            run_and_cache(
+                simulation_steps,
+                uranium_threshold_factor,
+                bounding_parameter=bound,
+                fission_prob_hardcoded_parameter=fission_prob,
+            )
+
 
 if __name__ == "__main__":
     simulation = Simulation(simulation_steps=simulation_steps, uranium_start=uranium_start, neutrons_start=neutrons_start)

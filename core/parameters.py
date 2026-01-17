@@ -1,15 +1,17 @@
 """ Global Parameters File"""
+simulation_steps = 100
 
 # simulation
-uranium_start = 350
-neutrons_start = 10
+uranium_start = 1
+neutrons_start = 1
 
 bounding_parameter = 13
 fission_prob_hardcoded_parameter = 0.1
-threshold_factor_uranium = 0.01
+
 
 simulation_speed = 5*10**-8  # smaller -> more precise (+ latency)
 interaction_cooldown_parameter = simulation_speed * 100 # parameter for how long a particle has to wait until it can interact again. debuggung purposes only
+threshold_factor_uranium = 0.01
 
 radius_multiplicator = 10**10   # same effect as "pressing" everything tighter together
 speed_magnitude_new_products = 1.5 * 10**6

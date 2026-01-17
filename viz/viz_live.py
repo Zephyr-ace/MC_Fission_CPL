@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from simulation import Simulation
-from parameters import threshold_factor_uranium, bounding_parameter, uranium_start, neutrons_start
+from logic.simulation import Simulation
+from logic.parameters import threshold_factor_uranium, bounding_parameter, uranium_start, neutrons_start
 
 simulator = Simulation(simulation_steps=10**8, neutrons_start=neutrons_start, uranium_start=uranium_start)
 particles = simulator._innitialize_particles()

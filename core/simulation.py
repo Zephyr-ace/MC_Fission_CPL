@@ -1,11 +1,8 @@
-import particles
-from particles import Particle, simulation_speed
+from logic.particles import Particle, simulation_speed
 import numpy as np
-import plotly.graph_objects as go
-import time
 import random
-from parameters import sigma_0, sigma_thermal, E_0, alpha, bounding_parameter, neutron_speed_magnitude, \
-    radius_multiplicator, neutron_init_speed, fission_prob_hardcoded_parameter, speed_magnitude_new_products, uranium_start, neutrons_start
+from logic.parameters import sigma_0, sigma_thermal, E_0, alpha, bounding_parameter, neutron_speed_magnitude, \
+    radius_multiplicator,simulation_steps, neutron_init_speed, fission_prob_hardcoded_parameter, speed_magnitude_new_products, uranium_start, neutrons_start
 
 class Simulation:
 
@@ -201,6 +198,11 @@ class Simulation:
 
         return particles, metadata
 
+    def _snapshot_particles(self, particles):
+        snapshot_positions = {"neutron": [], "uranium_235": [], "barium": [], "krypton": []}
+        for particle in particles:
+            snapshot_positions[particle.type].append(particle.position.copy()) # copy () fixes mutable bug
+        return snapshot_positions
 
 
     def simulate(self, uranium_threshold = 0.0):
@@ -211,17 +213,20 @@ class Simulation:
             "barium_counts": [0],
             "krypton_counts": [0],
         }
+        all_snapshots_positions = []
 
         for i in range(self.simulation_steps):
             self.one_simulation_step(particles, metadata)  # modifies particles and metadata directly
+            all_snapshots_positions.append(self._snapshot_particles(particles)) # save snapshot of positions
 
             # check if uranium bellow treshold
             if metadata["uranium_counts"][-1] <= uranium_threshold * metadata["uranium_counts"][0]:
-                return None
+                return all_snapshots_positions, metadata
 
-        return particles, metadata
+        return all_snapshots_positions, metadata
 
 if __name__ == "__main__":
-    simulation = Simulation(simulation_steps=1000, uranium_start=uranium_start, neutrons_start=neutrons_start)
-    p, m = simulation.simulate()
-    print(m)
+    simulation = Simulation(simulation_steps=simulation_steps, uranium_start=uranium_start, neutrons_start=neutrons_start)
+    s, m = simulation.simulate()
+    for snapshot in s:
+        print(snapshot)

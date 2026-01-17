@@ -1,8 +1,8 @@
 """ Global Parameters File"""
-simulation_steps = 2000
+simulation_steps = 200000
 
 # simulation
-uranium_start = 70
+uranium_start = 700
 neutrons_start = 1
 
 bounding_parameter = 13
